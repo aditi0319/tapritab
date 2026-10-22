@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}My profile{% endblock title %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm p-4">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                {% if profile.avatar %}
+                    <img src="{{ profile.avatar.url }}" alt="{{ user.username }}" width="64" height="64" class="rounded-circle object-fit-cover">
+                {% else %}
+                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width:64px;height:64px;font-size:1.5rem;">
+                        {{ user.username|first|upper }}
+                    </div>
+                {% endif %}
+                <div>
+                    <h2 class="mb-0">{{ user.username }}</h2>
+                    <small class="text-muted">{{ user.email }}</small>
+                </div>
+            </div>
+
+            <form method="post" enctype="multipart/form-data" class="tt-form">
+                {% csrf_token %}
+                {% include "includes/form_fields.html" %}
+                <button class="btn btn-chai w-100" type="submit">Save profile  </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock content %}

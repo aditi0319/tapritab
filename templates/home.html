@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock title %}
+
+{% block content %}
+<div class="text-center py-5">
+    <h1 class="fw-bold">☕ TapriTab</h1>
+    <p class="lead">Chai pe charcha, hisaab pe nahi.</p>
+    {% if user.is_authenticated %}
+        <p>Welcome back, <strong>{{ user.username }}</strong>! Your groups will appear here soon.</p>
+    {% else %}
+        <a class="btn btn-chai btn-lg" href="{% url 'accounts:register' %}">Get started</a>
+    {% endif %}
+</div>
+{% endblock content %}

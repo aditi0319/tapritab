@@ -1,0 +1,15 @@
+1. Made root folder names TapriTab
+2. Iniciated vertual environment(venv) and activated it. -- (python -m venv venv) then (venv/Scripts/activate)
+3. Installed packages like  Django and Pillow. (pip install django pillow)
+4. made a django project forlder by -- django-admin startproject tapritab_project . 
+5. made 3 apps
+  |->  python manage.py startapp accounts
+  |->  python manage.py startapp groups
+  |->  python manage.py startapp expenses
+6. register these apps in INSTALLED APPS  in settings.py
+7. Now test the server (python manage.py runserver)
+8. Save the packages (pip freeze > requirements.txt) 
+9. Added some model in accounts app like user, upi_id, phone, avatar
+10. Aded models in groups models.py
+11. models in expenses app
+12. code in admin.py in each app
