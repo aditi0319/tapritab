@@ -14,9 +14,59 @@
 
 <div class="row g-4">
     <div class="col-md-7">
-        <div class="card shadow-sm p-4 h-100">
-            <h5>Expenses</h5>
-            <p class="text-muted mb-0">Expenses and balances will appear here in the next step. ☕</p>
+               <div class="card shadow-sm p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Expenses</h5>
+                <a class="btn btn-chai btn-sm" href="{% url 'expenses:create' group.id %}">+ Add expense</a>
+            </div>
+
+            {% for expense in expenses %}
+                <details class="border rounded p-3 mb-2 bg-white">
+                    <summary class="d-flex justify-content-between align-items-center" style="list-style: none; cursor: pointer;">
+                        <span>
+                            <strong>{{ expense.title }}</strong>
+                            <span class="badge text-bg-light border ms-1">{{ expense.get_category_display }}</span><br>
+                            <small class="text-muted">
+                                {{ expense.paid_by.username }} paid · {{ expense.date|date:"d M" }} · {{ expense.get_split_type_display }}
+                            </small>
+                        </span>
+                        <span class="text-end">
+                            <strong>₹{{ expense.amount }}</strong><br>
+                            {% for split in expense.splits.all %}
+                                {% if split.user == user %}<small class="text-muted">your share ₹{{ split.share_amount }}</small>{% endif %}
+                            {% endfor %}
+                        </span>
+                    </summary>
+
+                    <ul class="list-unstyled small mt-3 mb-2">
+                        {% for split in expense.splits.all %}
+                            <li class="d-flex justify-content-between border-bottom py-1">
+                                <span>{{ split.user.username }}</span><span>₹{{ split.share_amount }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">Added by {{ expense.created_by.username|default:"a former member" }}</small>
+                        <span class="d-flex gap-2">
+                            {% if expense.receipt %}
+                                <a class="btn btn-outline-secondary btn-sm" href="{{ expense.receipt.url }}" target="_blank">Receipt</a>
+                            {% endif %}
+                            {% if is_admin or expense.created_by == user %}
+                                <form method="post" action="{% url 'expenses:delete' group.id expense.id %}"
+                                      onsubmit="return confirm('Delete this expense?');">
+                                    {% csrf_token %}
+                                    <button class="btn btn-outline-danger btn-sm" type="submit">Delete</button>
+                                </form>
+                            {% endif %}
+                        </span>
+                    </div>
+                </details>
+            {% empty %}
+                <div class="text-center text-muted py-4">
+                    <div class="fs-1">☕</div>
+                    No expenses yet. Add the first chai run!
+                </div>
+            {% endfor %}
         </div>
     </div>
 

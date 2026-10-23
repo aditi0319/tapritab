@@ -58,16 +58,21 @@ def group_detail(request, group_id):
     membership = get_membership_or_404(request.user, group_id)
     group = membership.group
     members = group.memberships.select_related('user').order_by('joined_at')
+    expenses = (
+        group.expenses
+        .select_related('paid_by', 'created_by')
+        .prefetch_related('splits__user')
+    )
     invite_url = request.build_absolute_uri(
         reverse('groups:join', kwargs={'invite_code': group.invite_code})
     )
     return render(request, 'groups/group_detail.html', {
         'group': group,
         'members': members,
+        'expenses': expenses,
         'is_admin': membership.role == Membership.Role.ADMIN,
         'invite_url': invite_url,
     })
-
 
 @login_required
 def group_join(request, invite_code):

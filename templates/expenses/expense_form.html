@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Add expense{% endblock title %}
+
+{% block content %}
+<a href="{% url 'groups:detail' group.id %}" class="d-inline-block mb-3">← {{ group.emoji }} {{ group.name }}</a>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm p-4">
+            <h2 class="mb-3">Add an expense</h2>
+
+            {% for error in form.non_field_errors %}
+                <div class="alert alert-danger">{{ error }}</div>
+            {% endfor %}
+
+            <form method="post" enctype="multipart/form-data" class="tt-form">
+                {% csrf_token %}
+                {% include "includes/form_fields.html" with form=form.main_fields %}
+
+                <h5 class="mt-4">Split between</h5>
+                <p class="small text-muted" id="split-hint">Tick who shared this expense.</p>
+
+                <table class="table align-middle">
+                    <tbody>
+                        {% for member, include_field, share_field in form.member_rows %}
+                            <tr>
+                                <td style="width: 2rem;">{{ include_field }}</td>
+                                <td><label for="{{ include_field.id_for_label }}">{{ member.username }}</label></td>
+                                <td class="share-cell" style="width: 10rem;">
+                                    <div class="input-group input-group-sm">
+                                        {{ share_field }}
+                                        <span class="input-group-text share-unit">₹</span>
+                                    </div>
+                                    {% for error in share_field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <p class="small fw-semibold" id="split-total"></p>
+
+                <button class="btn btn-chai w-100" type="submit">Save expense</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const splitSelect = document.getElementById('id_split_type');
+    const amountInput = document.getElementById('id_amount');
+    const shareCells = document.querySelectorAll('.share-cell');
+    const shareInputs = document.querySelectorAll('.share-cell input');
+    const units = document.querySelectorAll('.share-unit');
+    const hint = document.getElementById('split-hint');
+    const totalText = document.getElementById('split-total');
+
+    function updateSplitUI() {
+        const type = splitSelect.value;
+        shareCells.forEach(cell => cell.style.visibility = type === 'equal' ? 'hidden' : 'visible');
+        units.forEach(unit => unit.textContent = type === 'percent' ? '%' : '₹');
+        hint.textContent = {
+            equal: 'Tick who shared this expense. It will be split equally.',
+            exact: 'Enter the exact amount each person owes.',
+            percent: 'Enter each person\'s percentage. They must add up to 100%.',
+        }[type];
+
+        if (type === 'equal') { totalText.textContent = ''; return; }
+        let total = 0;
+        shareInputs.forEach(input => total += parseFloat(input.value) || 0);
+        const target = type === 'percent' ? 100 : (parseFloat(amountInput.value) || 0);
+        const unit = type === 'percent' ? '%' : '₹';
+        const left = (target - total).toFixed(2);
+        totalText.textContent = `Total: ${total.toFixed(2)}${unit} of ${target}${unit} (${left}${unit} left)`;
+        totalText.className = 'small fw-semibold ' + (Math.abs(left) < 0.005 ? 'text-success' : 'text-danger');
+    }
+
+    splitSelect.addEventListener('change', updateSplitUI);
+    amountInput.addEventListener('input', updateSplitUI);
+    shareInputs.forEach(input => input.addEventListener('input', updateSplitUI));
+    updateSplitUI();
+</script>
+{% endblock content %}
