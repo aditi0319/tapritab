@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}My groups{% endblock title %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">My groups</h2>
+    <a class="btn btn-chai" href="{% url 'groups:create' %}">+ New group</a>
+</div>
+
+<div class="row g-3">
+    {% for group in groups %}
+        <div class="col-md-4">
+            <a href="{% url 'groups:detail' group.id %}" class="text-decoration-none text-reset">
+                <div class="card shadow-sm h-100 p-3">
+                    <div class="fs-1">{{ group.emoji }}</div>
+                    <h5 class="mb-1">{{ group.name }}</h5>
+                    <small class="text-muted">{{ group.member_count }} member{{ group.member_count|pluralize }}</small>
+                </div>
+            </a>
+        </div>
+    {% empty %}
+        <div class="col-12">
+            <div class="card p-5 text-center">
+                <div class="fs-1">☕</div>
+                <p class="mb-3">You're not in any group yet.</p>
+                <p class="text-muted">Create one, or ask a friend for their invite link.</p>
+                <a class="btn btn-chai mx-auto" href="{% url 'groups:create' %}">Create your first group</a>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endblock content %}

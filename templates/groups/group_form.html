@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}New group{% endblock title %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm p-4">
+            <h2 class="mb-3">Create a group</h2>
+            <form method="post" class="tt-form">
+                {% csrf_token %}
+                {% include "includes/form_fields.html" %}
+                <button class="btn btn-chai w-100" type="submit">Create group</button>
+            </form>
+            <a href="{% url 'groups:list' %}" class="d-block text-center mt-3">← Back to my groups</a>
+        </div>
+    </div>
+</div>
+{% endblock content %}

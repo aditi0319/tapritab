@@ -6,7 +6,8 @@
     <h1 class="fw-bold">☕ TapriTab</h1>
     <p class="lead">Chai pe charcha, hisaab pe nahi.</p>
     {% if user.is_authenticated %}
-        <p>Welcome back, <strong>{{ user.username }}</strong>! Your groups will appear here soon.</p>
+                <p>Welcome back, <strong>{{ user.username }}</strong>!</p>
+        <a class="btn btn-chai btn-lg" href="{% url 'groups:list' %}">Go to my groups</a>
     {% else %}
         <a class="btn btn-chai btn-lg" href="{% url 'accounts:register' %}">Get started</a>
     {% endif %}

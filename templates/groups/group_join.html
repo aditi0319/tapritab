@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Join {{ group.name }}{% endblock title %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card shadow-sm p-4 text-center">
+            <div class="display-4">{{ group.emoji }}</div>
+            <h2>{{ group.name }}</h2>
+            <p class="text-muted">{{ member_count }} member{{ member_count|pluralize }} already in this group</p>
+            <form method="post">
+                {% csrf_token %}
+                <button class="btn btn-chai w-100" type="submit">Join group</button>
+            </form>
+            <a href="{% url 'groups:list' %}" class="d-block mt-3">No thanks</a>
+        </div>
+    </div>
+</div>
+{% endblock content %}
