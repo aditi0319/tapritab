@@ -8,6 +8,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
+from expenses.services import get_group_balances
+
 from .forms import GroupForm
 from .models import Group, Membership
 
@@ -63,6 +65,7 @@ def group_detail(request, group_id):
         .select_related('paid_by', 'created_by')
         .prefetch_related('splits__user')
     )
+    balances = get_group_balances(group)
     invite_url = request.build_absolute_uri(
         reverse('groups:join', kwargs={'invite_code': group.invite_code})
     )
@@ -70,9 +73,12 @@ def group_detail(request, group_id):
         'group': group,
         'members': members,
         'expenses': expenses,
+        'my_balance': balances.get(request.user, 0),
+        'my_balance_abs': abs(balances.get(request.user, 0)),
         'is_admin': membership.role == Membership.Role.ADMIN,
         'invite_url': invite_url,
     })
+
 
 @login_required
 def group_join(request, invite_code):
@@ -119,6 +125,8 @@ def remove_member(request, group_id, user_id):
     target = get_object_or_404(Membership, group_id=group_id, user_id=user_id)
     if target.user == request.user:
         messages.error(request, 'You cannot remove yourself. Use "Leave group" instead.')
+    elif get_group_balances(membership.group).get(target.user, 0) != 0:
+        messages.error(request, f'{target.user.username} still has an unsettled balance. Settle up first.')
     else:
         username = target.user.username
         target.delete()
@@ -131,6 +139,10 @@ def remove_member(request, group_id, user_id):
 def leave_group(request, group_id):
     membership = get_membership_or_404(request.user, group_id)
     group = membership.group
+
+    if get_group_balances(group).get(request.user, 0) != 0:
+        messages.error(request, 'You still have an unsettled balance in this group. Settle up first.')
+        return redirect('groups:detail', group_id=group_id)
 
     if membership.role == Membership.Role.ADMIN:
         other_admins = group.memberships.filter(role=Membership.Role.ADMIN).exclude(user=request.user)

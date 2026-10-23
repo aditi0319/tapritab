@@ -1,5 +1,5 @@
 from decimal import Decimal
-
+from .models import Expense, Settlement
 from django import forms
 from django.contrib.auth import get_user_model
 
@@ -83,4 +83,28 @@ class ExpenseForm(forms.ModelForm):
                 )
 
         self.splits = calculate_splits(amount, split_type, participants, values)
+        return cleaned
+
+
+class SettlementForm(forms.ModelForm):
+    class Meta:
+        model = Settlement
+        fields = ('payer', 'receiver', 'amount', 'note')
+
+    def __init__(self, *args, group, user, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+        members = User.objects.filter(memberships__group=group)
+        self.fields['payer'].queryset = members
+        self.fields['receiver'].queryset = members
+
+    def clean(self):
+        cleaned = super().clean()
+        payer = cleaned.get('payer')
+        receiver = cleaned.get('receiver')
+        if payer and receiver:
+            if payer == receiver:
+                raise forms.ValidationError('Payer and receiver must be different people.')
+            if self.user not in (payer, receiver):
+                raise forms.ValidationError('You can only record payments you made or received.')
         return cleaned

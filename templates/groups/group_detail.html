@@ -12,6 +12,17 @@
     </div>
 </div>
 
+<div class="card shadow-sm p-3 mb-4 d-flex flex-row justify-content-between align-items-center">
+    {% if my_balance > 0 %}
+        <span class="fs-5">You get back <strong class="text-success">₹{{ my_balance }}</strong></span>
+    {% elif my_balance < 0 %}
+        <span class="fs-5">You owe <strong class="text-danger">₹{{ my_balance_abs }}</strong></span>
+    {% else %}
+        <span class="fs-5 text-muted">You're all settled up ✓</span>
+    {% endif %}
+    <a class="btn btn-chai" href="{% url 'expenses:settle_up' group.id %}">Settle up</a>
+</div>
+
 <div class="row g-4">
     <div class="col-md-7">
                <div class="card shadow-sm p-4 h-100">

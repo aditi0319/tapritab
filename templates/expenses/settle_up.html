@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Settle up · {{ group.name }}{% endblock title %}
+
+{% block content %}
+<a href="{% url 'groups:detail' group.id %}" class="d-inline-block mb-3">← {{ group.emoji }} {{ group.name }}</a>
+<h2 class="mb-4">Settle up</h2>
+
+<div class="row g-4">
+    <div class="col-md-5">
+        <div class="card shadow-sm p-4 mb-4">
+            <h5>Balances</h5>
+            <ul class="list-group list-group-flush">
+                {% for b in balances %}
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span>{{ b.user.username }}{% if b.user == user %} <span class="text-muted">(you)</span>{% endif %}</span>
+                        {% if b.amount > 0 %}
+                            <span class="text-success fw-semibold">gets back ₹{{ b.abs_amount }}</span>
+                        {% elif b.amount < 0 %}
+                            <span class="text-danger fw-semibold">owes ₹{{ b.abs_amount }}</span>
+                        {% else %}
+                            <span class="text-muted">settled ✓</span>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        {% if history %}
+            <div class="card shadow-sm p-4">
+                <h5>Payment history</h5>
+                <ul class="list-unstyled small mb-0">
+                    {% for s in history %}
+                        <li class="border-bottom py-2">
+                            {{ s.payer.username }} paid {{ s.receiver.username }} <strong>₹{{ s.amount }}</strong>
+                            <span class="text-muted">· {{ s.confirmed_at|date:"d M" }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-7">
+        {% if pending %}
+            <div class="card shadow-sm p-4 mb-4 border-warning">
+                <h5>Waiting for confirmation</h5>
+                {% for s in pending %}
+                    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                        <span>{{ s.payer.username }} paid {{ s.receiver.username }} <strong>₹{{ s.amount }}</strong></span>
+                        <span class="d-flex gap-2">
+                            {% if s.receiver == user %}
+                                <form method="post" action="{% url 'expenses:settlement_confirm' group.id s.id %}">
+                                    {% csrf_token %}
+                                    <button class="btn btn-success btn-sm" type="submit">Confirm received</button>
+                                </form>
+                            {% endif %}
+                            {% if s.payer == user or s.receiver == user %}
+                                <form method="post" action="{% url 'expenses:settlement_cancel' group.id s.id %}">
+                                    {% csrf_token %}
+                                    <button class="btn btn-outline-secondary btn-sm" type="submit">
+                                        {% if s.receiver == user %}Not received{% else %}Cancel{% endif %}
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="card shadow-sm p-4">
+            <h5>Suggested payments</h5>
+            <p class="small text-muted">The fewest payments needed to settle everyone.</p>
+
+            {% for s in suggestions %}
+                <div class="border rounded p-3 mb-2 bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><strong>{{ s.payer.username }}</strong> → <strong>{{ s.receiver.username }}</strong></span>
+                        <span class="fs-5 fw-bold">₹{{ s.amount }}</span>
+                    </div>
+
+                    {% if s.is_pending %}
+                        <small class="text-warning">Payment recorded, waiting for {{ s.receiver.username }} to confirm.</small>
+                    {% elif s.payer == user %}
+                        <div class="d-flex flex-wrap gap-2 mt-2">
+                            {% if s.upi_link %}
+                                <a class="btn btn-chai btn-sm" href="{{ s.upi_link }}">Pay with UPI</a>
+                                <small class="text-muted align-self-center">UPI ID: {{ s.upi_id }}</small>
+                            {% else %}
+                                <small class="text-muted align-self-center">{{ s.receiver.username }} hasn't added a UPI ID yet.</small>
+                            {% endif %}
+                            <form method="post" action="{% url 'expenses:settlement_create' group.id %}" class="ms-auto">
+                                {% csrf_token %}
+                                <input type="hidden" name="payer" value="{{ s.payer.id }}">
+                                <input type="hidden" name="receiver" value="{{ s.receiver.id }}">
+                                <input type="hidden" name="amount" value="{{ s.amount }}">
+                                <button class="btn btn-outline-success btn-sm" type="submit">I've paid</button>
+                            </form>
+                        </div>
+                    {% elif s.receiver == user %}
+                        <form method="post" action="{% url 'expenses:settlement_create' group.id %}" class="mt-2 text-end">
+                            {% csrf_token %}
+                            <input type="hidden" name="payer" value="{{ s.payer.id }}">
+                            <input type="hidden" name="receiver" value="{{ s.receiver.id }}">
+                            <input type="hidden" name="amount" value="{{ s.amount }}">
+                            <button class="btn btn-outline-success btn-sm" type="submit">Mark as received</button>
+                        </form>
+                    {% endif %}
+                </div>
+            {% empty %}
+                <div class="text-center text-muted py-4">
+                    <div class="fs-1">🎉</div>
+                    Everyone is settled up!
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock content %}
