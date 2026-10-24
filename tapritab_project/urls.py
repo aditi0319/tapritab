@@ -11,6 +11,8 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
     path('groups/', include('groups.urls')),
     path('groups/', include('expenses.urls')),
+    path('api/', include('api.urls')),
+    path('api-auth/', include('rest_framework.urls')),
     path('', home, name='home'),
 ]
 
