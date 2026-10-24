@@ -1,7 +1,9 @@
 from decimal import ROUND_DOWN, Decimal
 
 from django.contrib.auth import get_user_model
-from django.db.models import Sum
+from django.db.models import Count, Sum
+
+from groups.models import Group
 
 from .models import Expense, ExpenseSplit, Settlement
 
@@ -91,3 +93,48 @@ def simplify_debts(balances):
         if creditors[j][0] == 0:
             j += 1
     return payments
+
+
+def get_chai_kings(group, today, limit=3):
+    """Top chai buyers in this group for the current month."""
+    return list(
+        Expense.objects
+        .filter(group=group, category=Expense.Category.CHAI,
+                date__year=today.year, date__month=today.month)
+        .values('paid_by__username')
+        .annotate(runs=Count('id'), total=Sum('amount'))
+        .order_by('-runs', '-total')[:limit]
+    )
+
+
+def get_dashboard(user):
+    """Everything the home dashboard shows for one user."""
+    groups = Group.objects.filter(memberships__user=user).order_by('-created_at')
+    rows = []
+    total_owed_to_me = Decimal('0.00')
+    total_i_owe = Decimal('0.00')
+    for group in groups:
+        balance = get_group_balances(group).get(user, Decimal('0.00'))
+        rows.append({'group': group, 'balance': balance, 'abs_balance': abs(balance)})
+        if balance > 0:
+            total_owed_to_me += balance
+        else:
+            total_i_owe += -balance
+
+    recent_expenses = (
+        Expense.objects
+        .filter(group__in=groups)
+        .select_related('group', 'paid_by')
+        .order_by('-created_at')[:8]
+    )
+    pending_to_confirm = Settlement.objects.filter(
+        receiver=user, status=Settlement.Status.PENDING,
+    ).select_related('payer', 'group')
+
+    return {
+        'group_rows': rows,
+        'total_owed_to_me': total_owed_to_me,
+        'total_i_owe': total_i_owe,
+        'recent_expenses': recent_expenses,
+        'pending_to_confirm': pending_to_confirm,
+    }

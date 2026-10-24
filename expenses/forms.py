@@ -1,9 +1,9 @@
 from decimal import Decimal
-from .models import Expense, Settlement
+
 from django import forms
 from django.contrib.auth import get_user_model
 
-from .models import Expense
+from .models import Expense, Settlement
 from .services import calculate_splits
 
 User = get_user_model()
@@ -108,3 +108,16 @@ class SettlementForm(forms.ModelForm):
             if self.user not in (payer, receiver):
                 raise forms.ValidationError('You can only record payments you made or received.')
         return cleaned
+
+
+class QuickAddForm(forms.Form):
+    ITEM_CHOICES = [
+        (Expense.Category.CHAI, '☕ Chai'),
+        (Expense.Category.SNACKS, '🥟 Snacks'),
+    ]
+
+    item = forms.ChoiceField(choices=ITEM_CHOICES, initial=Expense.Category.CHAI)
+    amount_each = forms.DecimalField(
+        label='₹ each', min_value=Decimal('1'), max_value=Decimal('10000'),
+        max_digits=7, decimal_places=2, initial=Decimal('15'),
+    )

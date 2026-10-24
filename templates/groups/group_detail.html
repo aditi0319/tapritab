@@ -25,7 +25,7 @@
 
 <div class="row g-4">
     <div class="col-md-7">
-               <div class="card shadow-sm p-4 h-100">
+        <div class="card shadow-sm p-4 h-100">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="mb-0">Expenses</h5>
                 <a class="btn btn-chai btn-sm" href="{% url 'expenses:create' group.id %}">+ Add expense</a>
@@ -82,6 +82,44 @@
     </div>
 
     <div class="col-md-5">
+        <div class="card shadow-sm p-4 mb-4">
+            <h5>⚡ Quick add</h5>
+            <p class="small text-muted mb-2">You paid for everyone in the group, same amount each.</p>
+            <form method="post" action="{% url 'expenses:quick_add' group.id %}" class="d-flex gap-2 align-items-end">
+                {% csrf_token %}
+                <div>
+                    <label class="form-label small mb-1" for="{{ quick_add_form.item.id_for_label }}">Item</label>
+                    <select name="item" id="{{ quick_add_form.item.id_for_label }}" class="form-select form-select-sm">
+                        {% for value, label in quick_add_form.fields.item.choices %}
+                            <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="width: 6rem;">
+                    <label class="form-label small mb-1" for="{{ quick_add_form.amount_each.id_for_label }}">₹ each</label>
+                    <input type="number" name="amount_each" id="{{ quick_add_form.amount_each.id_for_label }}"
+                           class="form-control form-control-sm" value="15" min="1" max="10000" step="0.01" required>
+                </div>
+                <button class="btn btn-chai btn-sm" type="submit">Add for all {{ members|length }}</button>
+            </form>
+        </div>
+
+        <div class="card shadow-sm p-4 mb-4">
+            <h5>👑 Chai King of {{ month_name }}</h5>
+            {% if chai_kings %}
+                <ol class="mb-0 ps-3">
+                    {% for king in chai_kings %}
+                        <li class="{% if forloop.first %}fw-bold{% endif %}">
+                            {{ king.paid_by__username }}{% if forloop.first %} 👑{% endif %}
+                            <span class="text-muted small">· {{ king.runs }} chai run{{ king.runs|pluralize }} · ₹{{ king.total }}</span>
+                        </li>
+                    {% endfor %}
+                </ol>
+            {% else %}
+                <p class="small text-muted mb-0">No chai runs this month yet. Be the first king!</p>
+            {% endif %}
+        </div>
+
         <div class="card shadow-sm p-4 mb-4">
             <h5>Invite friends</h5>
             <p class="small text-muted">Anyone with this link can join the group.</p>

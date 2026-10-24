@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock title %}
+
+{% block content %}
+<h2 class="mb-4">Hi {{ user.username }} ☕</h2>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm p-4 h-100">
+            <small class="text-muted">You are owed</small>
+            <div class="display-6 fw-bold text-success">₹{{ total_owed_to_me }}</div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm p-4 h-100">
+            <small class="text-muted">You owe</small>
+            <div class="display-6 fw-bold text-danger">₹{{ total_i_owe }}</div>
+        </div>
+    </div>
+</div>
+
+{% if pending_to_confirm %}
+    <div class="alert alert-warning">
+        <strong>{{ pending_to_confirm|length }} payment{{ pending_to_confirm|length|pluralize }} waiting for you to confirm:</strong>
+        <ul class="mb-0 mt-2">
+            {% for s in pending_to_confirm %}
+                <li>
+                    {{ s.payer.username }} says they paid you ₹{{ s.amount }} in
+                    <a href="{% url 'expenses:settle_up' s.group.id %}">{{ s.group.emoji }} {{ s.group.name }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">My groups</h5>
+                <a class="btn btn-chai btn-sm" href="{% url 'groups:create' %}">+ New group</a>
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for row in group_rows %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <a href="{% url 'groups:detail' row.group.id %}" class="text-decoration-none">
+                            {{ row.group.emoji }} {{ row.group.name }}
+                        </a>
+                        {% if row.balance > 0 %}
+                            <span class="text-success small fw-semibold">gets back ₹{{ row.abs_balance }}</span>
+                        {% elif row.balance < 0 %}
+                            <span class="text-danger small fw-semibold">owes ₹{{ row.abs_balance }}</span>
+                        {% else %}
+                            <span class="text-muted small">settled ✓</span>
+                        {% endif %}
+                    </li>
+                {% empty %}
+                    <li class="list-group-item px-0 text-muted">No groups yet. Create one or join with an invite link.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm p-4 h-100">
+            <h5 class="mb-3">Recent activity</h5>
+            <ul class="list-unstyled mb-0">
+                {% for e in recent_expenses %}
+                    <li class="d-flex justify-content-between border-bottom py-2 small">
+                        <span>
+                            <strong>{{ e.paid_by.username }}</strong> paid for {{ e.title }}<br>
+                            <span class="text-muted">{{ e.group.emoji }} {{ e.group.name }} · {{ e.date|date:"d M" }}</span>
+                        </span>
+                        <span class="fw-semibold">₹{{ e.amount }}</span>
+                    </li>
+                {% empty %}
+                    <li class="text-muted">No expenses yet.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock content %}

@@ -10,7 +10,7 @@ from django.views.decorators.http import require_POST
 from groups.models import Membership
 from groups.views import get_membership_or_404
 
-from .forms import ExpenseForm, SettlementForm
+from .forms import ExpenseForm, QuickAddForm, SettlementForm
 from .models import Expense, ExpenseSplit, Settlement
 from .services import get_group_balances, simplify_debts
 
@@ -54,6 +54,44 @@ def expense_delete(request, group_id, expense_id):
         expense.delete()
         messages.success(request, f'Deleted "{title}".')
     return redirect('groups:detail', group_id=group_id)
+
+
+@login_required
+@require_POST
+def quick_add(request, group_id):
+    membership = get_membership_or_404(request.user, group_id)
+    group = membership.group
+    form = QuickAddForm(request.POST)
+
+    if not form.is_valid():
+        messages.error(request, 'Enter an amount between ₹1 and ₹10,000 per person.')
+        return redirect('groups:detail', group_id=group.id)
+
+    item = form.cleaned_data['item']
+    amount_each = form.cleaned_data['amount_each']
+    members = [m.user for m in group.memberships.select_related('user')]
+    label = 'Chai' if item == Expense.Category.CHAI else 'Snacks'
+
+    with transaction.atomic():
+        expense = Expense.objects.create(
+            group=group,
+            title=f'{label} for everyone',
+            amount=amount_each * len(members),
+            paid_by=request.user,
+            category=item,
+            split_type=Expense.SplitType.EQUAL,
+            created_by=request.user,
+        )
+        ExpenseSplit.objects.bulk_create([
+            ExpenseSplit(expense=expense, user=member, share_amount=amount_each)
+            for member in members
+        ])
+
+    messages.success(
+        request,
+        f'{label} for everyone added: ₹{amount_each} × {len(members)} = ₹{expense.amount}. ☕',
+    )
+    return redirect('groups:detail', group_id=group.id)
 
 
 def build_upi_link(receiver, amount):

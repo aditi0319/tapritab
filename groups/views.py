@@ -8,10 +8,19 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from expenses.services import get_group_balances
+from django.utils import timezone
+
+from expenses.forms import QuickAddForm
+from expenses.services import get_chai_kings, get_dashboard, get_group_balances
 
 from .forms import GroupForm
 from .models import Group, Membership
+
+
+def home(request):
+    if not request.user.is_authenticated:
+        return render(request, 'home.html')
+    return render(request, 'dashboard.html', get_dashboard(request.user))
 
 
 def get_membership_or_404(user, group_id):
@@ -66,6 +75,7 @@ def group_detail(request, group_id):
         .prefetch_related('splits__user')
     )
     balances = get_group_balances(group)
+    today = timezone.localdate()
     invite_url = request.build_absolute_uri(
         reverse('groups:join', kwargs={'invite_code': group.invite_code})
     )
@@ -77,6 +87,9 @@ def group_detail(request, group_id):
         'my_balance_abs': abs(balances.get(request.user, 0)),
         'is_admin': membership.role == Membership.Role.ADMIN,
         'invite_url': invite_url,
+        'quick_add_form': QuickAddForm(),
+        'chai_kings': get_chai_kings(group, today),
+        'month_name': today.strftime('%B'),
     })
 
 
