@@ -6,6 +6,7 @@ app_name = 'expenses'
 
 urlpatterns = [
     path('<int:group_id>/expenses/new/', views.expense_create, name='create'),
+    path('<int:group_id>/expenses/<int:expense_id>/edit/', views.expense_edit, name='edit'),
     path('<int:group_id>/expenses/<int:expense_id>/delete/', views.expense_delete, name='delete'),
     path('<int:group_id>/expenses/quick/', views.quick_add, name='quick_add'),
     path('<int:group_id>/settle/', views.settle_up, name='settle_up'),

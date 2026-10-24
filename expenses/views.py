@@ -1,3 +1,4 @@
+from decimal import Decimal
 from urllib.parse import urlencode
 
 from django.contrib import messages
@@ -37,6 +38,62 @@ def expense_create(request, group_id):
             return redirect('groups:detail', group_id=group.id)
     else:
         form = ExpenseForm(group=group, initial={'paid_by': request.user})
+
+    return render(request, 'expenses/expense_form.html', {'form': form, 'group': group})
+
+
+def split_initial(expense):
+    """Pre-fill the split tick boxes and share boxes from an expense's saved splits."""
+    splits = {s.user_id: s.share_amount for s in expense.splits.all()}
+    initial = {}
+    for member in expense.group.memberships.values_list('user_id', flat=True):
+        initial[f'include_{member}'] = member in splits
+
+    if expense.split_type == Expense.SplitType.EXACT:
+        for user_id, share in splits.items():
+            initial[f'share_{user_id}'] = share
+    elif expense.split_type == Expense.SplitType.PERCENT and splits:
+        percents = {
+            user_id: (share * 100 / expense.amount).quantize(Decimal('0.01'))
+            for user_id, share in splits.items()
+        }
+        last = list(percents)[-1]
+        percents[last] += Decimal('100') - sum(percents.values())
+        for user_id, percent in percents.items():
+            initial[f'share_{user_id}'] = percent
+    return initial
+
+
+@login_required
+def expense_edit(request, group_id, expense_id):
+    membership = get_membership_or_404(request.user, group_id)
+    group = membership.group
+    expense = get_object_or_404(Expense, id=expense_id, group_id=group_id)
+
+    if expense.created_by != request.user and membership.role != Membership.Role.ADMIN:
+        messages.error(request, 'Only the person who added this expense or the group admin can edit it.')
+        return redirect('groups:detail', group_id=group.id)
+
+    member_ids = set(group.memberships.values_list('user_id', flat=True))
+    if any(split.user_id not in member_ids for split in expense.splits.all()):
+        messages.error(request, 'Someone in this expense has left the group, so it can no longer be edited.')
+        return redirect('groups:detail', group_id=group.id)
+
+    if request.method == 'POST':
+        form = ExpenseForm(request.POST, request.FILES, instance=expense, group=group)
+        if form.is_valid():
+            with transaction.atomic():
+                expense = form.save()
+                expense.splits.all().delete()
+                ExpenseSplit.objects.bulk_create([
+                    ExpenseSplit(expense=expense, user=user, share_amount=share)
+                    for user, share in form.splits.items()
+                    if share > 0
+                ])
+            messages.success(request, f'Updated "{expense.title}".')
+            return redirect('groups:detail', group_id=group.id)
+    else:
+        form = ExpenseForm(instance=expense, group=group, initial=split_initial(expense))
 
     return render(request, 'expenses/expense_form.html', {'form': form, 'group': group})
 

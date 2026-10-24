@@ -63,6 +63,7 @@
                                 <a class="btn btn-outline-secondary btn-sm" href="{{ expense.receipt.url }}" target="_blank">Receipt</a>
                             {% endif %}
                             {% if is_admin or expense.created_by == user %}
+                                <a class="btn btn-outline-primary btn-sm" href="{% url 'expenses:edit' group.id expense.id %}">Edit</a>
                                 <form method="post" action="{% url 'expenses:delete' group.id expense.id %}"
                                       onsubmit="return confirm('Delete this expense?');">
                                     {% csrf_token %}

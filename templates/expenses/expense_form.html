@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Add expense{% endblock title %}
+{% block title %}{% if form.instance.pk %}Edit expense{% else %}Add expense{% endif %}{% endblock title %}
 
 {% block content %}
 <a href="{% url 'groups:detail' group.id %}" class="d-inline-block mb-3">← {{ group.emoji }} {{ group.name }}</a>
@@ -7,7 +7,7 @@
 <div class="row justify-content-center">
     <div class="col-lg-8">
         <div class="card shadow-sm p-4">
-            <h2 class="mb-3">Add an expense</h2>
+            <h2 class="mb-3">{% if form.instance.pk %}Edit expense{% else %}Add an expense{% endif %}</h2>
 
             {% for error in form.non_field_errors %}
                 <div class="alert alert-danger">{{ error }}</div>
@@ -39,7 +39,7 @@
                 </table>
                 <p class="small fw-semibold" id="split-total"></p>
 
-                <button class="btn btn-chai w-100" type="submit">Save expense</button>
+                <button class="btn btn-chai w-100" type="submit">{% if form.instance.pk %}Save changes{% else %}Save expense{% endif %}</button>
             </form>
         </div>
     </div>
